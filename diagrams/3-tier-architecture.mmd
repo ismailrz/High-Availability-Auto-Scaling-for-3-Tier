@@ -1,0 +1,37 @@
+flowchart TB
+    Internet((Internet))
+
+    subgraph VPC["VPC (e.g. 10.0.0.0/16)"]
+        IGW[Internet Gateway]
+
+        subgraph PublicSubnets["Public Subnets (2 AZs)"]
+            ALBFront[Frontend ALB<br/>alb-sg: 80/443 from 0.0.0.0/0]
+            NAT[NAT Gateway]
+        end
+
+        subgraph PrivateSubnetsFrontend["Private Subnets (2 AZs) - optional per Task 10"]
+            FrontendASG["Frontend ASG<br/>EC2: Nginx/React<br/>min/desired/max e.g. 1/1/2"]
+        end
+
+        subgraph PrivateSubnetsBackend["Private Subnets (2 AZs)"]
+            ALBBack[Backend ALB<br/>Target Group: backend-tg, port 3000, health check /health]
+            BackendASG["Backend ASG<br/>EC2: Node.js/Express<br/>min 1 / desired 1 / max 3<br/>backend-sg: 3000 from alb-sg only"]
+        end
+
+        subgraph PrivateSubnetsData["Private Subnets (2 AZs)"]
+            RDS[(Amazon RDS<br/>MySQL/PostgreSQL<br/>rds-sg: 3306/5432 from backend-sg only)]
+        end
+    end
+
+    Internet --> IGW --> ALBFront
+    ALBFront --> FrontendASG
+    FrontendASG -->|calls backend API| ALBBack
+    Internet -.->|direct backend access for grading/demo| ALBBack
+    ALBBack --> BackendASG
+    BackendASG --> RDS
+    BackendASG -.->|outbound npm/OS updates| NAT
+    NAT --> IGW
+
+    style RDS fill:#f9d5e5
+    style BackendASG fill:#d5f9e5
+    style FrontendASG fill:#d5e5f9

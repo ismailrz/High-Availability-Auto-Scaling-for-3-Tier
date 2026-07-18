@@ -1,0 +1,19 @@
+[Unit]
+Description=Backend Node.js Express API
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/opt/backend
+ExecStart=/usr/bin/node /opt/backend/src/server.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3000
+EnvironmentFile=-/opt/backend/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

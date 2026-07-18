@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant Dev as Developer
+    participant GH as GitHub Repo
+    participant CP as AWS CodePipeline
+    participant CB as AWS CodeBuild
+    participant CD as AWS CodeDeploy
+    participant ASG as Backend ASG (EC2 instances)
+    participant ALB as Application Load Balancer
+
+    Dev->>GH: git push (Commit)
+    GH-->>CP: Webhook / CodeStar Connection trigger
+    CP->>CB: Start Build stage
+    CB->>CB: npm ci, npm test, package appspec.yml + scripts + backend/ into zip
+    CB-->>CP: Build artifact (zip) stored in S3
+    CP->>CD: Start Deploy stage
+    CD->>ASG: ApplicationStop
+    CD->>ASG: BeforeInstall
+    CD->>ASG: AfterInstall (npm ci --omit=dev, write systemd unit)
+    CD->>ASG: ApplicationStart (systemctl start backend)
+    CD->>ASG: ValidateService (curl localhost/health)
+    ASG-->>ALB: Register as healthy target
+    ALB-->>Dev: Serves updated version at ALB DNS
+
+    Note over Dev,ALB: Commit -> Build -> Deploy -> Auto Scaling Group

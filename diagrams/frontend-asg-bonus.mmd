@@ -1,0 +1,20 @@
+flowchart TB
+    Internet((Internet))
+    CF["CloudFront (optional)"]
+    ALB[Frontend ALB]
+
+    subgraph FrontendASG["Frontend ASG"]
+        direction LR
+        F1[EC2: Nginx serving static site]
+        F2[EC2: Nginx serving static site]
+    end
+
+    BackendALB["Backend ALB DNS<br/>(from 3-tier-architecture.mmd)"]
+
+    Internet --> CF --> ALB
+    Internet -.->|if no CloudFront| ALB
+    ALB --> FrontendASG
+    FrontendASG -->|fetch API calls| BackendALB
+
+    Note["Scaling policy: target tracking on<br/>ALBRequestCountPerTarget or Average CPU Utilization<br/>min/desired/max e.g. 1/1/2"]
+    FrontendASG -.-> Note

@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph State1["State 1: Before traffic shift"]
+        ALB1[ALB Listener :80]
+        TGBlue1["Target Group: backend-tg-blue<br/>ASG running v1 (current prod)"]
+        TGGreen1["Target Group: backend-tg-green<br/>NEW ASG/instances running v2<br/>CodeDeploy runs full lifecycle hooks<br/>incl. ValidateService, 0% live traffic"]
+        ALB1 -->|100% traffic| TGBlue1
+        ALB1 -.->|0% traffic, health-checked only| TGGreen1
+    end
+
+    subgraph State2["State 2: After CodeDeploy reroutes traffic"]
+        ALB2[ALB Listener :80]
+        TGBlue2["Target Group: backend-tg-blue<br/>Old v1 instances<br/>kept briefly for rollback window,<br/>then terminated per deployment group settings"]
+        TGGreen2["Target Group: backend-tg-green<br/>ASG running v2 (now production)"]
+        ALB2 -.->|0% traffic, draining| TGBlue2
+        ALB2 -->|100% traffic| TGGreen2
+    end
+
+    State1 -->|"CodeDeploy: Reroute traffic<br/>(immediately or manually approved)"| State2
+
+    style TGBlue1 fill:#d5e5f9
+    style TGGreen1 fill:#d5f9e5
+    style TGBlue2 fill:#d5e5f9
+    style TGGreen2 fill:#d5f9e5

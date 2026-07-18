@@ -1,0 +1,37 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+  pre_build:
+    commands:
+      - echo "Installing backend dependencies..."
+      - cd backend
+      - npm ci
+      - cd ..
+  build:
+    commands:
+      - echo "Running backend tests..."
+      - cd backend
+      - npm test
+      - cd ..
+      - echo "Ensuring CodeDeploy lifecycle scripts are executable..."
+      - chmod +x codedeploy/scripts/*.sh
+      - echo "Assembling deployment artifact staging directory..."
+      - rm -rf dist
+      - mkdir -p dist/backend
+      - cp -r backend/src dist/backend/src
+      - cp backend/package.json backend/package-lock.json dist/backend/
+      - cp codedeploy/appspec.yml dist/appspec.yml
+      - cp -r codedeploy/scripts dist/scripts
+      - echo "Artifact staging directory contents:"
+      - find dist -maxdepth 3
+  post_build:
+    commands:
+      - echo "Build completed on $(date)"
+
+artifacts:
+  base-directory: dist
+  files:
+    - '**/*'
